@@ -1,0 +1,12 @@
+version: '3.3'
+services:
+    lldap:
+        volumes:
+            - './lldap_data:/data'
+        restart: always
+        hostname: accounts.pogmom.me
+        ports:
+            - '3890:3890'
+            - '17170:17170'
+            - '6360:6360'
+        image: 'nitnelave/lldap:stable'

@@ -1,0 +1,7 @@
+ddns-updater/data/
+home_assistant/config/
+kuma/data/
+lldap/lldap_data/
+nginx/config/
+wyoming_piper/data/
+wyoming_whisper/data/
