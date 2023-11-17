@@ -1,0 +1,3 @@
+https://ci.opencollab.dev/job/GeyserMC/job/Floodgate/job/master/lastSuccessfulBuild/artifact/spigot/build/libs/floodgate-spigot.jar
+https://ci.opencollab.dev/job/GeyserMC/job/Geyser/job/master/lastSuccessfulBuild/artifact/bootstrap/spigot/build/libs/Geyser-Spigot.jar
+#https://gitlab.com/Programie/MatterBukkit/-/jobs/artifacts/1.7/raw/target/MatterBukkit.jar?job=release

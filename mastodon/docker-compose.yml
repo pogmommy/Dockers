@@ -1,0 +1,91 @@
+---
+version: "2.1"
+services:
+  mastodon-redis:
+    image: redis
+    network_mode: mastodonnet
+    container_name: mastodon-redis
+    restart: always
+    volumes:
+      - '/mnt/2TB/mastodon/redis:/data'
+  mastodon-db:
+    image: postgres:15.2
+    container_name: mastodon-db
+    network_mode: mastodonnet
+    restart: always
+    environment:
+      POSTGRES_USER: mastodon
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - '/mnt/2TB/mastodon/postgres:/var/lib/postgresql/data'
+#    ports:
+#      - 5432:5432
+  mastodon-elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: mastodon-elasticsearch
+    network_mode: mastodonnet
+#    ports:
+#      - '9200:9200'
+    environment:
+      - discovery.type=single-node
+      - xpack.ml.enabled=false
+    volumes:
+      - '/mnt/2TB/mastodon/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml'
+  mastodon:
+    image: lscr.io/linuxserver/mastodon:latest
+    network_mode: mastodonnet
+    container_name: mastodon
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=${TZ}
+      - LOCAL_DOMAIN=pogmom.me
+      - REDIS_HOST=mastodon-redis
+      - REDIS_PORT=6379
+      - DB_HOST=mastodon-db
+      - DB_USER=mastodon
+      - DB_NAME=mastodon
+      - DB_PASS=${POSTGRES_PASSWORD}
+      - DB_PORT=5432
+      - ES_ENABLED=true
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - OTP_SECRET=${OTP_SECRET}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - SMTP_SERVER=mail.smtp2go.com
+      - SMTP_PORT=2525
+      - SMTP_LOGIN=pogmom
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_ADDRESS=support@pogmom.me
+      - LDAP_ENABLED=true
+      - LDAP_METHOD=simple
+      - LDAP_HOST=ldap.pogmom.me
+      - LDAP_PORT=3890
+      - LDAP_BASE=dc=pogmom,dc=me
+      - LDAP_SEARCH_FILTER=(&(memberOf=cn=mastodon,ou=groups,dc=pogmom,dc=me)(&(objectclass=person)(|(%{uid}=%{email})(%{mail}=%{email}))))
+      - LDAP_BIND_DN=uid=admin,ou=people,dc=pogmom,dc=me
+      - LDAP_PASSWORD=${LDAP_PASSWORD}
+      - LDAP_UID=uid
+      - LDAP_MAIL=mail
+      - LDAP_UID_CONVERSION_ENABLED=true
+      - S3_ENABLED=false
+      - WEB_DOMAIN=masto.pogmom.me #optional
+      - ES_HOST=mastodon-elasticsearch #optional
+      - ES_PORT=9200 #optional
+#      - ES_USER=elastic #optional
+#      - ES_PASS=elastic #optional
+#      - S3_BUCKET= #optional
+#      - AWS_ACCESS_KEY_ID= #optional
+#      - AWS_SECRET_ACCESS_KEY= #optional
+#      - S3_ALIAS_HOST= #optional
+      - SIDEKIQ_ONLY=false #optional
+      - SIDEKIQ_QUEUE= #optional
+      - SIDEKIQ_DEFAULT=false #optional
+      - SIDEKIQ_THREADS=5 #optional
+      - DB_POOL=5 #optional
+    volumes:
+      - /mnt/2TB/mastodon/config:/config
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped

@@ -1,0 +1,42 @@
+version: "3"
+services:
+  minecraft-server:
+    image: itzg/minecraft-server:java8-multiarch
+    container_name: mc-modded
+    ports:
+      - "25566:25565"
+    environment:
+      EULA: "TRUE"
+      EXEC_DIRECTLY: "TRUE"
+      MEMORY: "4G"
+#      VERSION: "LATEST"
+      
+      TYPE: "AUTO_CURSEFORGE"
+      CF_API_KEY: "$$2a$$10$$u9An.w/G4.L5PSQnBCA0bOi0o2nFzaJO8JDktH8Df04hJyv/FHTp."
+      CF_PAGE_URL: "https://www.curseforge.com/minecraft/modpacks/roguelike-adventures-and-dungeons"
+#      CF_EXCLUDE_MODS: ""
+#      CF_MODPACK_ZIP: "/downloads/modpacks/RAD2-Serverpack-1.2.zip"
+#      SPIGET_RESOURCES: "18494"
+#      MODS_FILE: "/extras/mods.txt"
+#      EXTRA_ARGS: "--world-dir ./worlds/"
+      DIFFICULTY: "hard"
+      MOTD: "§3Join the discord at §ddis.pogmom.me§f\\n§fModded Server§f || §4Qu§cee§6r L§eib§aer§2at§1io§9n N§5ow§d!"
+      OPS: "pogmommy"
+#      ICON: "/extras/server-icon.png"
+      MAX_PLAYERS: "25"
+#      ALLOW_NETHER: "TRUE"
+      ANNOUNCE_PLAYER_ACHIEVEMENTS: "TRUE"
+      GENERATE_STRUCTURES: "TRUE"
+      MODE: "survival"
+      SERVER_NAME: "Pogmommy"
+      ENABLE_ROLLING_LOGS: "TRUE"
+      TZ: ${TZ}
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    volumes:
+      - "/mnt/2TB/minecraft/modded:/data"
+#      - "./plugins:/plugins"
+#      - "./worlds:/worlds"
+      - "./extras:/extras"
+      - "./downloads:/downloads"
