@@ -1,0 +1,285 @@
+version: "3.8"
+
+services:
+
+  portainer_agent: #Portainer is a web UI for managing your docker containers. This container is just the agent which you need to pair with the portainer-ce host container https://www.portainer.io/
+    image: portainer/agent:2.19.3
+    container_name: portainer_agent
+    ports:
+      - "9001:9001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    restart: always
+
+  airsonic-advanced: #subsonic music streaming platform https://docs.linuxserver.io/images/docker-airsonic-advanced/
+    image: lscr.io/linuxserver/airsonic-advanced:latest
+    container_name: airsonic-advanced
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - JAVA_OPTS=-Dserver.use-forward-headers=true -Dserver.forward-headers-strategy=native
+    volumes:
+      - ${DATA_PATH}/airsonic-advanced/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${DATA_PATH}/airsonic-advanced/playlists:/playlists
+    ports:
+      - ${AIRSONIC_PORT}:4040
+    restart: unless-stopped
+
+  airsonic-refix: #modernized frontend for airsonic https://github.com/tamland/airsonic-refix
+    image: tamland/airsonic-refix:latest
+    container_name: airsonic-refix
+    environment:
+      - SERVER_URL=${AIRSONIC_SERVER}
+    ports:
+      - ${AIRSONIC_REFIX_PORT}:80
+    restart: unless-stopped
+
+  calibre-web: #Ebook hosting platform and online reader https://docs.linuxserver.io/images/docker-calibre-web/
+    image: lscr.io/linuxserver/calibre-web:latest
+    container_name: calibre-web
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/calibre-web/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+    ports:
+      - ${CALIBRE_WEB_PORT}:8083
+    restart: unless-stopped
+
+  calibre: #VNC client to manage Calibre library remotely https://docs.linuxserver.io/images/docker-calibre/
+    image: lscr.io/linuxserver/calibre:latest
+    container_name: calibre
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - CUSTOM_USER=${KASM_USER}
+      - PASSWORD=${KASM_PASS}
+    volumes:
+      - ${DATA_PATH}/calibre/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+    ports:
+      - ${CALIBRE_PORT}:8080
+    restart: unless-stopped
+
+  samba: # samba remote file access https://github.com/deftwork/samba
+    image: elswork/samba:latest
+    container_name: samba
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "139:139"
+      - "445:445"
+    volumes:
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/transcodecache:/transcodecache
+    command: '-u "${UID}:${GID}:${SMB_USER}:${SMB_USER}:${SMB_PASS}" -s "Media:/mnt/Media:rw:${SMB_USER}" -s "TranscodeCache:/transcodecache:rw:${SMB_USER}"'
+    restart: unless-stopped
+
+  gluetun: # pipe container traffic through vpn https://hub.docker.com/r/qmcgaw/gluetun
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=airvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WG_PRIV_KEY}
+      - WIREGUARD_PRESHARED_KEY=${WG_PRESHARED_KEY}
+      - WIREGUARD_ADDRESSES=${WG_ADDR}
+      - SERVER_COUNTRIES=${WG_COUNTRIES}
+      - FIREWALL_VPN_INPUT_PORTS=${VPN_PORTS}
+    ports:
+      - ${QBT_PRIVATE_PORT}:8181
+      - ${QBT_PUBLIC_PORT}:8182
+    restart: unless-stopped
+
+  qbittorrent-private: # qbittorrent with webui, with network piped through gluetun https://docs.linuxserver.io/images/docker-qbittorrent/
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent-private
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8181
+    volumes:
+      - ${DATA_PATH}/gluetun/qbtprivate:/config
+      - ${TEMP_PATH}/torrents/downloads:/downloads
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+
+  qbittorrent-public: # qbittorrent with webui, with network piped through gluetun. Second container allows for different settings based on different torrent services https://docs.linuxserver.io/images/docker-qbittorrent/
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent-public
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8182
+    volumes:
+      - ${DATA_PATH}/gluetun/qbtpublic:/config
+      - ${TEMP_PATH}/torrents/downloads:/downloads:rw
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+
+  jellyfin: # movie and tv streaming platform https://docs.linuxserver.io/images/docker-jellyfin/
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - JELLYFIN_PublishedServerUrl="https://${JELLYFIN_SERVER}"
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/jellyfin/config:/config
+      - ${DATA_PATH}/jellyfin/dist:/usr/share/jellyfin/web:ro
+      - ${MEDIA_PATH}:/mnt/Media:ro
+    ports:
+      - ${JELLYFIN_PORT}:8096
+      - 8920:8920
+      - 1900:1900/udp
+      - 7359:7359/udp
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped
+
+  jellyfin-vue: #reimagined jellyfin frontent https://github.com/jellyfin/jellyfin-vue
+    image: ghcr.io/jellyfin/jellyfin-vue:unstable
+    container_name: jellyfin-vue
+    environment:
+      - DEFAULT_SERVERS=${JELLYFIN_SERVER}
+    ports:
+      - ${JELLYFIN_VUE_PORT}:80
+    restart: unless-stopped
+
+  emulatorjs: # play many older video game systems via a web-based emulator https://emulatorjs.org/
+    image: lscr.io/linuxserver/emulatorjs:latest
+    container_name: emulatorjs
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/emulatorjs/config:/config
+      - ${MEDIA_PATH}/Emulators:/data
+    ports:
+      - ${EMUJS_BACKEND_PORT}:3000
+      - ${EMUJS_PORT}:80
+    restart: unless-stopped
+
+  bazarr: # automatic subtitle management for media server https://docs.linuxserver.io/images/docker-bazarr/
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/bazarr/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+    ports:
+      - ${BAZARR_PORT}:6767
+    restart: unless-stopped
+
+  lidarr: # music library management for media server https://docs.linuxserver.io/images/docker-lidarr/
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/lidarr/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/torrents/downloads:/drives/downloads
+    ports:
+      - ${LIDARR_PORT}:8686
+    restart: unless-stopped
+
+  prowlarr: # torrent tracker manager/updater https://docs.linuxserver.io/images/docker-prowlarr/
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/prowlarr/config:/config
+    ports:
+      - ${PROWLARR_PORT}:9696
+    restart: unless-stopped
+
+  radarr: #movie library management for media server https://docs.linuxserver.io/images/docker-radarr/
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/radarr/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/torrents/downloads:/drives/downloads
+    ports:
+      - ${RADARR_PORT}:7878
+    restart: unless-stopped
+
+  sonarr: #TV library management for media server https://docs.linuxserver.io/images/docker-sonarr/
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/sonarr/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/torrents/downloads:/drives/downloads
+    ports:
+      - ${SONARR_PORT}:8989
+    restart: unless-stopped
+
+  tdarr: #transcode video files according to ruleset to save storage space https://hub.docker.com/r/haveagitgat/tdarr/
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    environment:
+      - TZ=${TZ}
+      - PUID=${UID}
+      - PGID=${GID}
+      - UMASK_SET=002
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true
+      - inContainer=true
+      - nodeName=MyInternalNode
+    volumes:
+      - ${DATA_PATH}/tdarr/server:/app/server
+      - ${DATA_PATH}/tdarr/configs:/app/configs
+      - ${DATA_PATH}/tdarr/logs:/app/logs
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/transcodecache:/temp
+    ports:
+      - ${TDARR_HTTP_PORT}:8265
+      - ${TDARR_SERVER_PORT}:8266
+    restart: unless-stopped
+
+  ombi: # automatically manage requests for media server https://docs.linuxserver.io/images/docker-ombi/
+    image: lscr.io/linuxserver/ombi:latest
+    container_name: ombi
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/ombi/config:/config
+    ports:
+      - ${OMBI_PORT}:3579
+    restart: unless-stopped
