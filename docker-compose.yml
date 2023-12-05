@@ -6,7 +6,7 @@ volumes:
 
 services:
 
-  portainer_agent:
+  portainer_agent: #Portainer is a web UI for managing your docker containers. This container is just the agent which you need to pair with the portainer-ce host container https://www.portainer.io/
     image: portainer/agent:2.19.3
     container_name: portainer_agent
     volumes:
@@ -16,7 +16,7 @@ services:
       - "9001:9001"
     restart: always
 
-  mastodon-redis:
+  mastodon-redis: # data structure server for mastodon https://redis.io/docs/about/
     image: redis
     container_name: mastodon-redis
     network_mode: mastodonnet
@@ -24,7 +24,7 @@ services:
       - ${DATA_PATH}/mastodon/redis:/data'
     restart: unless-stopped
 
-  mastodon-db:
+  mastodon-db: # database for mastodon https://hub.docker.com/_/postgres
     image: postgres:15.2
     container_name: mastodon-db
     network_mode: mastodonnet
@@ -35,18 +35,16 @@ services:
       - ${DATA_PATH}/mastodon/postgres:/var/lib/postgresql/data
     restart: unless-stopped
 
-  mastodon-elasticsearch:
+  mastodon-elasticsearch: # search and analytics engine for mastodon https://hub.docker.com/_/elasticsearch
     image: elasticsearch:8.8.0
     container_name: mastodon-elasticsearch
     network_mode: mastodonnet
     environment:
       - discovery.type=single-node
       - xpack.ml.enabled=false
-#    volumes:
-#      - ${DATA_PATH}/mastodon/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     restart: unless-stopped
 
-  mastodon:
+  mastodon: # activitypub microbloggin social network https://docs.linuxserver.io/images/docker-mastodon/#version-tags
     image: lscr.io/linuxserver/mastodon:latest
     container_name: mastodon
     network_mode: mastodonnet
@@ -99,7 +97,7 @@ services:
       - ${MASTODON_HTTPS_PORT}:443
     restart: unless-stopped
 
-  mc-nginx:
+  mc-nginx: # I use this to host a webpage at my minecraft ip
     image: nginx
     container_name: mc-nginx
     volumes:
@@ -108,7 +106,7 @@ services:
       - ${MC_NGINX_PORT}:80
     restart: unless-stopped
 
-  mc-smp:
+  mc-smp: # minecraft paper server. The config here and options in .env will get you a working server, but you might want to customize it further https://docker-minecraft-server.readthedocs.io/
     image: itzg/minecraft-server
     container_name: mc-smp
     ports:
@@ -136,6 +134,7 @@ services:
       - SERVER_NAME=${MC_SMP_NAME}
       - ENABLE_ROLLING_LOGS=TRUE
       - TZ=${TZ}
+      - SEED=${MC_SMP_SEED}
     tty: true
     stdin_open: true
     volumes:
@@ -143,26 +142,7 @@ services:
       - ${DATA_PATH}/mc-smp/extras:/extras
     restart: unless-stopped
 
-#  crafty:
-#    container_name: crafty
-#    image: registry.gitlab.com/crafty-controller/crafty-4:latest
-#    environment:
-#        - TZ=${TZ}
-#    ports:
-#        - ${CRAFTY_HTTP_PORT}:8000
-#        - ${CRAFTY_HTTPS_PORT}:8443
-#        - ${CRAFT_DYNMAP_PORT}:8123
-#        - ${CRAFTY_BEDROCK_PORT}:19132
-#        - ${CRAFTY_JAVA_PORT}:25565
-#    volumes:
-#        - ${DATA_PATH}/crafty/backups:/crafty/backups
-#        - ${DATA_PATH}/crafty/logs:/crafty/logs
-#        - ${DATA_PATH}/crafty/servers:/crafty/servers
-#        - ${DATA_PATH}/crafty/config:/crafty/app/config
-#        - ${DATA_PATH}/crafty/import:/crafty/import
-#    restart: unless-stopped
-
-  all-in-one:
+  all-in-one: #nextcloud cloud storage - the aio image provides significant functionality with minimal setup https://github.com/nextcloud/all-in-one
     image: nextcloud/all-in-one:latest
     container_name: nextcloud-aio-mastercontainer
     environment:
@@ -176,7 +156,7 @@ services:
       - 8080:8080
     restart: always
 
-  synapse:
+  synapse: #matrix server https://hub.docker.com/r/matrixdotorg/synapse/
     image: matrixdotorg/synapse:latest
     container_name: "synapse"
     volumes:
@@ -188,17 +168,16 @@ services:
       - SYNAPSE_REPORT_STATS="yes"
     ports:
       - ${MATRIX_PORT}:8008/tcp
-#      - "8448:8448/tcp"
     restart: unless-stopped
 
-  riot-web:
+  riot-web: #matrix frontend https://hub.docker.com/r/bubuntux/riot-web
     image: bubuntux/riot-web
     container_name: riot_web
     ports:
       - ${RIOT_PORT}:80
     restart: unless-stopped
 
-  synapse-postgresql:
+  synapse-postgresql: #matrix database https://hub.docker.com/_/postgres
     image: postgres:latest
     container_name: synapse-postgresql
     hostname: synapse-postgresql
