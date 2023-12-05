@@ -1,0 +1,170 @@
+version: "3.8"
+
+networks:
+  authelia:
+    driver: bridge
+  docker-local:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${SUBNET_PREFIX}0/24
+
+volumes:
+  portainer_data:
+    name: portainer_data
+
+services:
+
+  portainer: #Portainer is a web UI for managing your docker containers https://www.portainer.io/
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    restart: always
+
+  organizr: #organizr is a server control panel https://github.com/causefx/Organizr
+    image: organizr/organizr
+    container_name: organizr
+    volumes:
+      - ${DATA_PATH}/organizr/config:/config
+    environment:
+      - PGID=${GID}
+      - PUID=${UID}
+      - TZ=${TZ}
+      - branch=v2-master
+    ports:
+      - ${ORGANIZR_PORT}:80
+    restart: unless-stopped
+
+  ddns-updater: # dns updater, prevents issues caused by cycling residential ip address https://hub.docker.com/r/qmcgaw/ddns-updater
+    image: qmcgaw/ddns-updater:latest
+    container_name: ddns-updater
+    networks:
+      docker-local:
+        ipv4_address: ${SUBNET_PREFIX}2
+    environment:
+      - LISTENING_PORT=8000
+      - ROOT_URL=/
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/ddns-updater/data:/updater/data
+    ports:
+      - ${DDNS_PORT}:8000/tcp
+    restart: unless-stopped
+
+  home-assistant: #home automation hub. Control lights, audio, temperature, etc. https://www.home-assistant.io/installation/linux#docker-compose
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: home-assistant
+    volumes:
+      - ${DATA_PATH}/home-assistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+      - ${MEDIA_PATH}:/media/Media:ro
+    privileged: true
+    network_mode: host
+    restart: unless-stopped
+
+  uptime-kuma: # uptime watcher, send notifications when something is down https://github.com/louislam/uptime-kuma
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    networks:
+      docker-local:
+        ipv4_address: ${SUBNET_PREFIX}3
+    volumes:
+      - ${DATA_PATH}/uptime-kuma/data:/app/data
+    ports:
+      - ${KUMA_PORT}:3001
+    restart: unless-stopped
+
+  lldap: #very simple LDAP implementation- in case you want a central account for all other services https://github.com/lldap/lldap
+    image: nitnelave/lldap:stable
+    container_name: lldap
+    networks:
+      docker-local:
+        ipv4_address: ${SUBNET_PREFIX}4
+    volumes:
+      - ${DATA_PATH}/lldap/data:/data
+    hostname: ${LLDAP_SERVER}
+    ports:
+      - ${LLDAP_LDAP_PORT}:3890
+      - ${LLDAP_WEBUI_PORT}:17170
+      - ${LLDAP_LDAPS_PORT}:6360
+    restart: unless-stopped
+
+  nginx-proxy-manager: # web ui for managing nginx reverse proxy config https://nginxproxymanager.com/
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    networks:
+      docker-local:
+        ipv4_address: ${SUBNET_PREFIX}5
+    volumes:
+      - ${DATA_PATH}/nginx-proxy-manager/data:/data
+      - ${DATA_PATH}/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - ${DATA_PATH}/nginx-proxy-manager/static:/static
+      - ${DATA_PATH}/nginx-proxy-manager/snippets:/snippets:ro
+    ports:
+      - ${NGINX_HTTP_PORT}:80
+      - ${NGINX_WEBUI_PORT}:81
+      - ${NGINX_HTTPS_PORT}:443
+    restart: unless-stopped
+
+  authelia: # authentication frontend for services that don't natively support external login
+    image: authelia/authelia
+    container_name: authelia
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/authelia/config:/config
+    networks:
+      - authelia
+    ports:
+      - 9091:9091
+    restart: unless-stopped
+
+  authelia-redis: # data structure server for authelia #https://redis.io/docs/about/
+    image: redis:alpine
+    container_name: authelia-redis
+    environment:
+      - TZ=${TZ}
+      - PUID=${UID}
+      - PGID=${GID}
+    volumes:
+      - ${DATA_PATH}/authelia/redis:/data
+    networks:
+      - authelia
+    expose:
+      - 6379
+    restart: unless-stopped
+
+  wyoming-piper: # text to speech for home assistant https://github.com/rhasspy/wyoming-addons
+    image: rhasspy/wyoming-piper
+    container_name: wyoming-piper
+    networks:
+      docker-local:
+        ipv4_address: ${SUBNET_PREFIX}6
+    volumes:
+      - ${DATA_PATH}/wyoming_piper/data:/data
+    ports:
+      - ${WYOMING_PIPER_PORT}:10200
+    command: --voice en-us-libritts-high
+    restart: unless-stopped
+
+  wyoming-whisper: #speech to text for home assistant https://github.com/rhasspy/wyoming-addons
+    image: rhasspy/wyoming-whisper
+    container_name: wyoming_whisper
+    networks:
+      docker-local:
+        ipv4_address: ${SUBNET_PREFIX}7
+    volumes:
+      - ${DATA_PATH}/wyoming_whisper/data:/data
+    ports:
+      - ${WYOMING_WHISPER_PORT}:10300
+    command: --model tiny-int8 --language en
+    restart: unless-stopped
