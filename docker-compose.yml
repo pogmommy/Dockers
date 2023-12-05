@@ -1,0 +1,214 @@
+version: "3.8"
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+
+services:
+
+  portainer_agent:
+    image: portainer/agent:2.19.3
+    container_name: portainer_agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    ports:
+      - "9001:9001"
+    restart: always
+
+  mastodon-redis:
+    image: redis
+    container_name: mastodon-redis
+    network_mode: mastodonnet
+    volumes:
+      - ${DATA_PATH}/mastodon/redis:/data'
+    restart: unless-stopped
+
+  mastodon-db:
+    image: postgres:15.2
+    container_name: mastodon-db
+    network_mode: mastodonnet
+    environment:
+      - POSTGRES_USER=${MASTODON_DB_USER}
+      - POSTGRES_PASSWORD=${MASTODON_DB_PASS}
+    volumes:
+      - ${DATA_PATH}/mastodon/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  mastodon-elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: mastodon-elasticsearch
+    network_mode: mastodonnet
+    environment:
+      - discovery.type=single-node
+      - xpack.ml.enabled=false
+#    volumes:
+#      - ${DATA_PATH}/mastodon/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    restart: unless-stopped
+
+  mastodon:
+    image: lscr.io/linuxserver/mastodon:latest
+    container_name: mastodon
+    network_mode: mastodonnet
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - LOCAL_DOMAIN=${MASTODON_DOMAIN}
+      - REDIS_HOST=mastodon-redis
+      - REDIS_PORT=6379
+      - DB_HOST=mastodon-db
+      - DB_USER=${MASTODON_DB_USER}
+      - DB_NAME=mastodon
+      - DB_PASS=${MASTODON_DB_PASS}
+      - DB_PORT=5432
+      - ES_ENABLED=true
+      - SECRET_KEY_BASE=${MASTODON_SECRET_KEY_BASE}
+      - OTP_SECRET=${MASTODON_OTP_SECRET}
+      - VAPID_PRIVATE_KEY=${MASTODON_VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${MASTODON_VAPID_PUBLIC_KEY}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_LOGIN=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASS}
+      - SMTP_FROM_ADDRESS=${SMTP_FROM}
+      - LDAP_ENABLED=true
+      - LDAP_METHOD=simple
+      - LDAP_HOST=${LDAP_SERVER}
+      - LDAP_PORT=${LDAP_PORT}
+      - LDAP_BASE=${LDAP_BASE}
+      - LDAP_SEARCH_FILTER=${LDAP_FILTER}
+      - LDAP_BIND_DN=${LDAP_BIND_DN}
+      - LDAP_PASSWORD=${LDAP_BIND_PASS}
+      - LDAP_UID=uid
+      - LDAP_MAIL=mail
+      - LDAP_UID_CONVERSION_ENABLED=true
+      - S3_ENABLED=false
+      - WEB_DOMAIN=${MASTODON_WEB_DOMAIN}
+      - ES_HOST=mastodon-elasticsearch
+      - ES_PORT=9200
+      - SIDEKIQ_ONLY=false
+      - SIDEKIQ_QUEUE=
+      - SIDEKIQ_DEFAULT=false
+      - SIDEKIQ_THREADS=5
+      - DB_POOL=5
+    volumes:
+      - ${DATA_PATH}/mastodon/config:/config
+    ports:
+      - ${MASTODON_HTTP_PORT}:80
+      - ${MASTODON_HTTPS_PORT}:443
+    restart: unless-stopped
+
+  mc-nginx:
+    image: nginx
+    container_name: mc-nginx
+    volumes:
+      - ${DATA_PATH}/mc-nginx/src:/usr/share/nginx/html
+    ports:
+      - ${MC_NGINX_PORT}:80
+    restart: unless-stopped
+
+  mc-smp:
+    image: itzg/minecraft-server
+    container_name: mc-smp
+    ports:
+      - ${MC_SMP_JAVA_PORT}:25565/tcp
+      - ${MC_SMP_JAVA_PORT}:25565/udp
+      - ${MC_SMP_BEDROCK_PORT}:19132/tcp
+      - ${MC_SMP_BEDROCK_PORT}:19132/udp
+    environment:
+      - EULA=TRUE
+      - EXEC_DIRECTLY=TRUE
+      - MEMORY=4G
+      - VERSION=LATEST
+      - TYPE=PAPER
+      - SPIGET_RESOURCES=18494
+      - MODS_FILE=/extras/mods.txt
+      - DIFFICULTY=${MC_SMP_DIFFICULTY}
+      - MOTD=${MC_SMP_MOTD}
+      - OPS=${MC_SMP_OPS}
+      - ICON=/extras/server-icon.png
+      - MAX_PLAYERS=${MC_SMP_MAX_PLAYERS}
+      - ALLOW_NETHER=TRUE
+      - ANNOUNCE_PLAYER_ACHIEVEMENTS=TRUE
+      - GENERATE_STRUCTURES=TRUE
+      - MODE=survival
+      - SERVER_NAME=${MC_SMP_NAME}
+      - ENABLE_ROLLING_LOGS=TRUE
+      - TZ=${TZ}
+    tty: true
+    stdin_open: true
+    volumes:
+      - ${DATA_PATH}/mc-smp/data:/data
+      - ${DATA_PATH}/mc-smp/extras:/extras
+    restart: unless-stopped
+
+#  crafty:
+#    container_name: crafty
+#    image: registry.gitlab.com/crafty-controller/crafty-4:latest
+#    environment:
+#        - TZ=${TZ}
+#    ports:
+#        - ${CRAFTY_HTTP_PORT}:8000
+#        - ${CRAFTY_HTTPS_PORT}:8443
+#        - ${CRAFT_DYNMAP_PORT}:8123
+#        - ${CRAFTY_BEDROCK_PORT}:19132
+#        - ${CRAFTY_JAVA_PORT}:25565
+#    volumes:
+#        - ${DATA_PATH}/crafty/backups:/crafty/backups
+#        - ${DATA_PATH}/crafty/logs:/crafty/logs
+#        - ${DATA_PATH}/crafty/servers:/crafty/servers
+#        - ${DATA_PATH}/crafty/config:/crafty/app/config
+#        - ${DATA_PATH}/crafty/import:/crafty/import
+#    restart: unless-stopped
+
+  all-in-one:
+    image: nextcloud/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    environment:
+      - APACHE_PORT=11000
+      - APACHE_IP_BINDING=0.0.0.0
+      - NEXTCLOUD_DATADIR=${DATA_PATH}/nextcloud-aio/nextcloud
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config:rw
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    ports:
+      - 8080:8080
+    restart: always
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: "synapse"
+    volumes:
+      - ${DATA_PATH}/synapse/data:/data
+    environment:
+      - VIRTUAL_HOST=${MATRIX_SERVER}
+      - VIRTUAL_PORT=8008
+      - SYNAPSE_SERVER_NAME=${MATRIX_SERVER}
+      - SYNAPSE_REPORT_STATS="yes"
+    ports:
+      - ${MATRIX_PORT}:8008/tcp
+#      - "8448:8448/tcp"
+    restart: unless-stopped
+
+  riot-web:
+    image: bubuntux/riot-web
+    container_name: riot_web
+    ports:
+      - ${RIOT_PORT}:80
+    restart: unless-stopped
+
+  synapse-postgresql:
+    image: postgres:latest
+    container_name: synapse-postgresql
+    hostname: synapse-postgresql
+    environment:
+      - POSTGRES_PASSWORD=${SYNAPSE_DB_PASS}
+      - POSTGRES_USER=${SYNAPSE_DB_USER}
+      - POSTGRES_DB=synapse
+      - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
+    volumes:
+      - ${DATA_PATH}/synapse/postgres:/var/lib/postgresql/
+    ports:
+      - ${SYNAPSE_DB_PORT}:5432/tcp
+    restart: unless-stopped
