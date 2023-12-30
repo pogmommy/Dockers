@@ -168,3 +168,35 @@ services:
       - ${WYOMING_WHISPER_PORT}:10300
     command: --model tiny-int8 --language en
     restart: unless-stopped
+
+#  apcupsd:
+#    image: gregewing/apcupsd:latest
+#    container_name: apcupsd
+#    volumes:
+#      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+#      - ${DATA_PATH}/apcupsd:/etc/apcupsd
+#    environment:
+#      - UPSTYPE=net
+#      - DEVICE=router-netgear-r8000:3551
+#      - TZ=${TZ}
+#    restart: always
+
+
+#  tftpd:
+#    image: docker.io/kalaksi/tftpd
+#    container_name: tftp
+#    environment:
+#      TFTPD_BIND_ADDRESS: "0.0.0.0:1069"
+#      TFTPD_EXTRA_ARGS: '--blocksize 1468'
+#    cap_drop:
+#      - ALL
+#    cap_add:
+#      - SETUID
+#      - SETGID
+#      - SYS_CHROOT
+#    volumes:
+#      - ${DATA_PATH}/tftp/boot:/tftpboot/boot
+#      - ${DATA_PATH}/tftp/config.cfg:/tftpboot/pxelinux.cfg:ro
+#    ports:
+#      - 69:1069/udp
+#    restart: unless-stopped
