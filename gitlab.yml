@@ -23,7 +23,7 @@ services:
     - DB_NAME=gitlabhq_production
     - DB_EXTENSION=pg_trgm,btree_gist
 
-  gitlab:
+  gitlab: # https://github.com/sameersbn/docker-gitlab
     restart: always
     image: sameersbn/gitlab:16.10.2
     container_name: gitlab
@@ -87,6 +87,15 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_STARTTLS=true
+
+      - OAUTH_ENABLED=false
+      - OAUTH_EXTERNAL_PROVIDERS=github,gitlab
+
+      - OAUTH_GITHUB_API_KEY=${GL_GITHUB_API_KEY}
+      - OAUTH_GITHUB_APP_SECRET=${GL_GITHUB_API_SECRET}
+
+      - OAUTH_GITLAB_API_KEY=${GL_GITLAB_API_KEY}
+      - OAUTH_GITLAB_APP_SECRET=${GL_GITLAB_API_SECRET}
 
 #      - LDAP_ENABLED=true
 #      - LDAP_LABEL=LDAP
