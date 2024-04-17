@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+
+#  samba: # samba remote file access https://github.com/deftwork/samba
+#    image: elswork/samba:latest
+#    container_name: samba
+#    environment:
+#      - TZ=${TZ}
+#    ports:
+#      - "139:139"
+#      - "445:445"
+#    volumes:
+#      - ${DATA_PATH}:/mnt/Media
+#      - ${TEMP_PATH}/transcodecache:/transcodecache
+#    command: '-u "${UID}:${GID}:${SMB_USER}:${SMB_USER}:${SMB_PASS}" -s "Media:/mnt/Media:rw:${SMB_USER}" -s "TranscodeCache:/transcodecache:rw:${SMB_USER}"'
+#    restart: unless-stopped

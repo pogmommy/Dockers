@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+
+  mastodon-redis: # data structure server for mastodon https://redis.io/docs/about/
+    image: redis
+    container_name: mastodon-redis
+    network_mode: mastodonnet
+    volumes:
+      - ${DATA_PATH}/mastodon/redis:/data'
+    restart: unless-stopped
+
+  mastodon-db: # database for mastodon https://hub.docker.com/_/postgres
+    image: postgres:15.2
+    container_name: mastodon-db
+    network_mode: mastodonnet
+    environment:
+      - POSTGRES_USER=${MASTODON_DB_USER}
+      - POSTGRES_PASSWORD=${MASTODON_DB_PASS}
+    volumes:
+      - ${DATA_PATH}/mastodon/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  mastodon-elasticsearch: # search and analytics engine for mastodon https://hub.docker.com/_/elasticsearch
+    image: elasticsearch:8.8.0
+    container_name: mastodon-elasticsearch
+    network_mode: mastodonnet
+    environment:
+      - discovery.type=single-node
+      - xpack.ml.enabled=false
+      - xpack.security.enabled=false
+    restart: unless-stopped
+
+  mastodon: # activitypub microbloggin social network https://docs.linuxserver.io/images/docker-mastodon/#version-tags
+    image: lscr.io/linuxserver/mastodon:latest
+    container_name: mastodon
+    network_mode: mastodonnet
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - LOCAL_DOMAIN=${MASTODON_DOMAIN}
+      - REDIS_HOST=mastodon-redis
+      - REDIS_PORT=6379
+      - DB_HOST=mastodon-db
+      - DB_USER=${MASTODON_DB_USER}
+      - DB_NAME=mastodon
+      - DB_PASS=${MASTODON_DB_PASS}
+      - DB_PORT=5432
+      - ES_ENABLED=true
+      - SECRET_KEY_BASE=${MASTODON_SECRET_KEY_BASE}
+      - OTP_SECRET=${MASTODON_OTP_SECRET}
+      - VAPID_PRIVATE_KEY=${MASTODON_VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${MASTODON_VAPID_PUBLIC_KEY}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_LOGIN=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASS}
+      - SMTP_FROM_ADDRESS=${SMTP_FROM}
+      - LDAP_ENABLED=true
+      - LDAP_METHOD=simple
+      - LDAP_HOST=${LDAP_SERVER}
+      - LDAP_PORT=${LDAP_PORT}
+      - LDAP_BASE=${LDAP_BASE}
+      - LDAP_SEARCH_FILTER=${LDAP_FILTER}
+      - LDAP_BIND_DN=${LDAP_BIND_DN}
+      - LDAP_PASSWORD=${LDAP_BIND_PASS}
+      - LDAP_UID=uid
+      - LDAP_MAIL=mail
+      - LDAP_UID_CONVERSION_ENABLED=true
+      - S3_ENABLED=false
+      - WEB_DOMAIN=${MASTODON_WEB_DOMAIN}
+      - ES_HOST=mastodon-elasticsearch
+      - ES_PORT=9200
+      - SIDEKIQ_ONLY=false
+      - SIDEKIQ_QUEUE=
+      - SIDEKIQ_DEFAULT=false
+      - SIDEKIQ_THREADS=5
+      - DB_POOL=5
+    volumes:
+      - ${DATA_PATH}/mastodon/config:/config
+    ports:
+      - ${MASTODON_HTTP_PORT}:80
+      - ${MASTODON_HTTPS_PORT}:443
+    restart: unless-stopped

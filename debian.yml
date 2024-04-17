@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+
+  aptly:
+    image: urpylka/aptly:latest
+    container_name: aptly
+    ports:
+      - "89:80"
+    volumes:
+      - ${DATA_PATH}/aptly/data:/opt/aptly
+    logging:
+      driver: syslog
+    restart: always
+
+#  debian:
+#    image: sapphic_buildserver
+#    container_name: sapphic_buildserver
+#    volumes:
+#      - ${DATA_PATH}/sapphic_buildserver/config:/app/config
+#      - ${DATA_PATH}/sapphic_buildserver/output:/app/output
+#    restart: always

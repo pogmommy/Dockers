@@ -1,0 +1,23 @@
+version: "3.8"
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+
+
+services:
+
+  all-in-one: #nextcloud cloud storage - the aio image provides significant functionality with minimal setup https://github.com/nextcloud/all-in-one
+    image: nextcloud/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    environment:
+      - APACHE_PORT=11000
+      - APACHE_IP_BINDING=0.0.0.0
+      - NEXTCLOUD_DATADIR=${DATA_PATH}/nextcloud-aio/nextcloud
+      - NEXTCLOUD_MOUNT=/mnt/2TB/local/
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config:rw
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    ports:
+      - 8080:8080
+    restart: always

@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+
+  synapse: #matrix server https://hub.docker.com/r/matrixdotorg/synapse/
+    image: matrixdotorg/synapse:latest
+    container_name: "synapse"
+    volumes:
+      - ${DATA_PATH}/synapse/data:/data
+    environment:
+      - VIRTUAL_HOST=${MATRIX_SERVER}
+      - VIRTUAL_PORT=8008
+      - SYNAPSE_SERVER_NAME=${MATRIX_SERVER}
+      - SYNAPSE_REPORT_STATS="yes"
+    ports:
+      - ${MATRIX_PORT}:8008/tcp
+    restart: unless-stopped
+
+  riot-web: #matrix frontend https://hub.docker.com/r/bubuntux/riot-web
+    image: bubuntux/riot-web
+    container_name: riot_web
+    ports:
+      - ${RIOT_PORT}:80
+    restart: unless-stopped
+
+  synapse-postgresql: #matrix database https://hub.docker.com/_/postgres
+    image: postgres:latest
+    container_name: synapse-postgresql
+    hostname: synapse-postgresql
+    environment:
+      - POSTGRES_PASSWORD=${SYNAPSE_DB_PASS}
+      - POSTGRES_USER=${SYNAPSE_DB_USER}
+      - POSTGRES_DB=synapse
+      - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
+    volumes:
+      - ${DATA_PATH}/synapse/postgres:/var/lib/postgresql/
+    ports:
+      - ${SYNAPSE_DB_PORT}:5432/tcp
+    restart: unless-stopped

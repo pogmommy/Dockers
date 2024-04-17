@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+
+  mc-nginx: # I use this to host a webpage at my minecraft ip
+    image: nginx
+    container_name: mc-nginx
+    volumes:
+      - ${DATA_PATH}/mc-nginx/src:/usr/share/nginx/html
+    ports:
+      - ${MC_NGINX_PORT}:80
+    restart: unless-stopped
+
+  mc-smp: # minecraft paper server. The config here and options in .env will get you a working server, but you might want to customize it further https://docker-minecraft-server.readthedocs.io/
+    image: itzg/minecraft-server
+    container_name: mc-smp
+    ports:
+      - ${MC_SMP_JAVA_PORT}:25565/tcp
+      - ${MC_SMP_JAVA_PORT}:25565/udp
+      - ${MC_SMP_BEDROCK_PORT}:19132/tcp
+      - ${MC_SMP_BEDROCK_PORT}:19132/udp
+      - ${MC_DYNMAP_PORT}:8123
+    environment:
+      - EULA=TRUE
+      - UID=${UID}
+      - GID=${GID}
+      - EXEC_DIRECTLY=TRUE
+      - MEMORY=4G
+      - VERSION=LATEST
+      - TYPE=PAPER
+      - SPIGET_RESOURCES=18494
+      - MODS_FILE=/extras/mods.txt
+      - DIFFICULTY=${MC_SMP_DIFFICULTY}
+      - MOTD=${MC_SMP_MOTD}
+      - OPS=${MC_SMP_OPS}
+      - ICON=/extras/server-icon.png
+      - MAX_PLAYERS=${MC_SMP_MAX_PLAYERS}
+      - ALLOW_NETHER=TRUE
+      - ANNOUNCE_PLAYER_ACHIEVEMENTS=TRUE
+      - GENERATE_STRUCTURES=TRUE
+      - MODE=survival
+      - SERVER_NAME=${MC_SMP_NAME}
+      - ENABLE_ROLLING_LOGS=TRUE
+      - TZ=${TZ}
+      - SEED=${MC_SMP_SEED}
+    tty: true
+    stdin_open: true
+    volumes:
+      - ${DATA_PATH}/mc-smp/data:/data
+      - ${DATA_PATH}/mc-smp/extras:/extras
+    restart: unless-stopped
