@@ -1,0 +1,52 @@
+version: "3.8"
+
+networks:
+  docker-local:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${MONITOR_SUBNET_PREFIX}0/24
+
+volumes:
+  portainer_data:
+    name: portainer_data
+
+services:
+
+  portainer: #Portainer is a web UI for managing your docker containers https://www.portainer.io/
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    restart: always
+
+  organizr: #organizr is a server control panel https://github.com/causefx/Organizr
+    image: organizr/organizr
+    container_name: organizr
+    volumes:
+      - ${DATA_PATH}/organizr/config:/config
+    environment:
+      - PGID=${GID}
+      - PUID=${UID}
+      - TZ=${TZ}
+      - branch=v2-master
+    ports:
+      - ${ORGANIZR_PORT}:80
+    restart: unless-stopped
+
+  uptime-kuma: # uptime watcher, send notifications when something is down https://github.com/louislam/uptime-kuma
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    networks:
+      docker-local:
+        ipv4_address: ${MONITOR_SUBNET_PREFIX}3
+    volumes:
+      - ${DATA_PATH}/uptime-kuma/data:/app/data
+    ports:
+      - ${KUMA_PORT}:3001
+    restart: unless-stopped

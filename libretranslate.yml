@@ -1,0 +1,30 @@
+version: "3.8"
+
+#networks:
+#  docker-local:
+#    driver: bridge
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: ${SUBNET_PREFIX}0/24
+
+volumes:
+  libretranslate_api_keys:
+  libretranslate_models:
+
+services:
+
+  libretranslate:
+    image: libretranslate/libretranslate
+    container_name: libretranslate
+    volumes:
+      - libretranslate_api_keys:/app/db
+      - libretranslate_models:/home/libretranslate/.local:rw
+    ports:
+      - "5009:5000"
+    environment:
+      - LT_API_KEYS=true
+      - LT_REQ_LIMIT=5
+      - LT_API_KEYS_DB_PATH=/app/db/api
+      - LT_UPDATE_MODELS=true
+    restart: unless-stopped

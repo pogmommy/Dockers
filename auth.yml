@@ -1,0 +1,63 @@
+version: "3.8"
+
+networks:
+  authelia:
+    driver: bridge
+  docker-local:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${AUTH_SUBNET_PREFIX}0/24
+
+services:
+
+  lldap: #very simple LDAP implementation- in case you want a central account for all other services https://github.com/lldap/lldap
+    image: nitnelave/lldap:stable
+    container_name: lldap
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1024m"
+        max-file: "3"
+    networks:
+      docker-local:
+        ipv4_address: ${AUTH_SUBNET_PREFIX}4
+    volumes:
+      - ${DATA_PATH}/lldap/data:/data
+    hostname: ${LLDAP_SERVER}
+    ports:
+      - ${LLDAP_LDAP_PORT}:3890
+      - ${LLDAP_WEBUI_PORT}:17170
+      - ${LLDAP_LDAPS_PORT}:6360
+    restart: unless-stopped
+
+  authelia: # authentication frontend for services that don't natively support external login
+    image: authelia/authelia
+    container_name: authelia
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/authelia/config:/config
+    networks:
+      - authelia
+    ports:
+      - 9091:9091
+    restart: unless-stopped
+
+  authelia-redis: # data structure server for authelia #https://redis.io/docs/about/
+    image: redis:alpine
+    container_name: authelia-redis
+    environment:
+      - TZ=${TZ}
+      - PUID=${UID}
+      - PGID=${GID}
+    volumes:
+      - ${DATA_PATH}/authelia/redis:/data
+    networks:
+      - authelia
+    expose:
+      - 6379
+    restart: unless-stopped
