@@ -89,13 +89,11 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      - VPN_SERVICE_PROVIDER=airvpn
-      - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=${WG_PRIV_KEY}
-      - WIREGUARD_PRESHARED_KEY=${WG_PRESHARED_KEY}
-      - WIREGUARD_ADDRESSES=${WG_ADDR}
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASS}
       - SERVER_COUNTRIES=${WG_COUNTRIES}
-      - FIREWALL_VPN_INPUT_PORTS=${VPN_PORTS}
+      - VPN_PORT_FORWARDING=on
     ports:
       - ${QBT_PRIVATE_PORT}:8181
       - ${QBT_PUBLIC_PORT}:8182
@@ -140,7 +138,7 @@ services:
     volumes:
       - ${DATA_PATH}/jellyfin/config:/config
       - ${DATA_PATH}/jellyfin/dist:/usr/share/jellyfin/web:ro
-      - ${MEDIA_PATH}:/mnt/Media:ro
+      - ${MEDIA_PATH}:/mnt/Media:rw
     ports:
       - ${JELLYFIN_PORT}:8096
       - 8920:8920
@@ -159,21 +157,21 @@ services:
       - ${JELLYFIN_VUE_PORT}:80
     restart: unless-stopped
 
-  emulatorjs: # play many older video game systems via a web-based emulator https://emulatorjs.org/
-    image: lscr.io/linuxserver/emulatorjs:latest
-    container_name: emulatorjs
-    environment:
-      - PUID=${UID}
-      - PGID=${GID}
-      - TZ=${TZ}
-    volumes:
-      - ${DATA_PATH}/emulatorjs/config:/config
-      - ${MEDIA_PATH}/Emulators:/data
-    ports:
-      - ${EMUJS_BACKEND_PORT}:3000
-      - ${EMUJS_PORT}:80
-    restart: unless-stopped
-
+#  emulatorjs: # play many older video game systems via a web-based emulator https://emulatorjs.org/
+#    image: lscr.io/linuxserver/emulatorjs:latest
+#    container_name: emulatorjs
+#    environment:
+#      - PUID=${UID}
+#      - PGID=${GID}
+#      - TZ=${TZ}
+#    volumes:
+#      - ${DATA_PATH}/emulatorjs/config:/config
+#      - ${MEDIA_PATH}/Emulators:/data
+#    ports:
+#      - ${EMUJS_BACKEND_PORT}:3000
+#      - ${EMUJS_PORT}:80
+#    restart: unless-stopped
+#
   bazarr: # automatic subtitle management for media server https://docs.linuxserver.io/images/docker-bazarr/
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
@@ -214,6 +212,17 @@ services:
       - ${DATA_PATH}/prowlarr/config:/config
     ports:
       - ${PROWLARR_PORT}:9696
+    restart: unless-stopped
+  flaresolverr:
+    image: flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=${TZ}
+    ports:
+      - ${FLARESOLVERR_PORT}:8191
     restart: unless-stopped
 
   radarr: #movie library management for media server https://docs.linuxserver.io/images/docker-radarr/

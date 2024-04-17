@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+
+  airsonic-advanced: #subsonic music streaming platform https://docs.linuxserver.io/images/docker-airsonic-advanced/
+    image: lscr.io/linuxserver/airsonic-advanced:latest
+    container_name: airsonic-advanced
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - JAVA_OPTS=-Dserver.use-forward-headers=true -Dserver.forward-headers-strategy=native
+    volumes:
+      - ${DATA_PATH}/airsonic-advanced/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${DATA_PATH}/airsonic-advanced/playlists:/playlists
+    ports:
+      - ${AIRSONIC_PORT}:4040
+    restart: unless-stopped
+
+  airsonic-refix: #modernized frontend for airsonic https://github.com/tamland/airsonic-refix
+    image: tamland/airsonic-refix:latest
+    container_name: airsonic-refix
+    environment:
+      - SERVER_URL=${AIRSONIC_SERVER}
+    ports:
+      - ${AIRSONIC_REFIX_PORT}:80
+    restart: unless-stopped
+
+  lidarr: # music library management for media server https://docs.linuxserver.io/images/docker-lidarr/
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/lidarr/config:/config
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/torrents/downloads:/drives/downloads
+    ports:
+      - ${LIDARR_PORT}:8686
+    restart: unless-stopped

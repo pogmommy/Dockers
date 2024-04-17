@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+
+  gluetun: # pipe container traffic through vpn https://hub.docker.com/r/qmcgaw/gluetun
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASS}
+      - SERVER_COUNTRIES=${WG_COUNTRIES}
+      - VPN_PORT_FORWARDING=on
+    ports:
+      - ${QBT_PRIVATE_PORT}:8181
+      - ${QBT_PUBLIC_PORT}:8182
+    restart: unless-stopped
+
+  qbittorrent-private: # qbittorrent with webui, with network piped through gluetun https://docs.linuxserver.io/images/docker-qbittorrent/
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent-private
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8181
+    volumes:
+      - ${DATA_PATH}/gluetun/qbtprivate:/config
+      - ${TEMP_PATH}/torrents/downloads:/downloads
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+
+  qbittorrent-public: # qbittorrent with webui, with network piped through gluetun. Second container allows for different settings based on different torrent services https://docs.linuxserver.io/images/docker-qbittorrent/
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent-public
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8182
+    volumes:
+      - ${DATA_PATH}/gluetun/qbtpublic:/config
+      - ${TEMP_PATH}/torrents/downloads:/downloads:rw
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+
+  prowlarr: # torrent tracker manager/updater https://docs.linuxserver.io/images/docker-prowlarr/
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH}/prowlarr/config:/config
+    ports:
+      - ${PROWLARR_PORT}:9696
+    restart: unless-stopped
+  flaresolverr:
+    image: flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=${TZ}
+    ports:
+      - ${FLARESOLVERR_PORT}:8191
+    restart: unless-stopped
