@@ -1,19 +1,27 @@
 version: "3.8"
 
+networks:
+  mastodonnet:
+    name: mastodonnet
+
 services:
 
   mastodon-redis: # data structure server for mastodon https://redis.io/docs/about/
     image: redis
     container_name: mastodon-redis
-    network_mode: mastodonnet
+#    network_mode: mastodonnet
+    networks:
+      - mastodonnet
     volumes:
-      - ${DATA_PATH}/mastodon/redis:/data'
+      - ${DATA_PATH}/mastodon/redis:/data
     restart: unless-stopped
 
   mastodon-db: # database for mastodon https://hub.docker.com/_/postgres
     image: postgres:15.2
     container_name: mastodon-db
-    network_mode: mastodonnet
+#    network_mode: mastodonnet
+    networks:
+      - mastodonnet
     environment:
       - POSTGRES_USER=${MASTODON_DB_USER}
       - POSTGRES_PASSWORD=${MASTODON_DB_PASS}
@@ -24,7 +32,9 @@ services:
   mastodon-elasticsearch: # search and analytics engine for mastodon https://hub.docker.com/_/elasticsearch
     image: elasticsearch:8.8.0
     container_name: mastodon-elasticsearch
-    network_mode: mastodonnet
+#    network_mode: mastodonnet
+    networks:
+      - mastodonnet
     environment:
       - discovery.type=single-node
       - xpack.ml.enabled=false
@@ -34,7 +44,9 @@ services:
   mastodon: # activitypub microbloggin social network https://docs.linuxserver.io/images/docker-mastodon/#version-tags
     image: lscr.io/linuxserver/mastodon:latest
     container_name: mastodon
-    network_mode: mastodonnet
+#    network_mode: mastodonnet
+    networks:
+      - mastodonnet
     environment:
       - PUID=${UID}
       - PGID=${GID}
