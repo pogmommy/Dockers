@@ -97,16 +97,3 @@ services:
       - OAUTH_GITLAB_API_KEY=${GL_GITLAB_API_KEY}
       - OAUTH_GITLAB_APP_SECRET=${GL_GITLAB_API_SECRET}
 
-#      - LDAP_ENABLED=true
-#      - LDAP_LABEL=LDAP
-#      - LDAP_HOST=${LDAP_SERVER}
-#      - LDAP_PORT=${LDAP_PORT}
-#      - LDAP_UID=uid
-#      - LDAP_METHOD=plain
-#      - LDAP_VERIFY_SSL=false
-#      - LDAP_BIND_DN=${LDAP_BIND_DN}
-#      - LDAP_PASS=${LDAP_BIND_PASS}
-#      - LDAP_ACTIVE_DIRECTORY=false
-#      - LDAP_BASE=${LDAP_BASE}
-#      - LDAP_USER_FILTER=${LDAP_FILTER}
-#      - LDAP_LOWERCASE_USERNAMES=true
