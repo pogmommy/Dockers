@@ -12,7 +12,6 @@ services:
       - TZ=${TZ}
     volumes:
       - ${DATA_PATH}/jellyfin/config:/config
-      - ${DATA_PATH}/jellyfin/dist:/usr/share/jellyfin/web:ro
       - ${MEDIA_PATH}:/mnt/Media:rw
     ports:
       - ${JELLYFIN_PORT}:8096

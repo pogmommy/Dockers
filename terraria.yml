@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+
+  terraria:
+    image: ghcr.io/beardedio/terraria:vanilla-latest
+    container_name: terraria_salivating_salmon
+    ports:
+      - '7777:7777'
+    restart: unless-stopped
+    environment:
+      - world=${TERRARIA_WORLD_FILE}
+    volumes:
+      - ${MEDIA_PATH}/Games/terraria/config:/config
+    tty: true
+    stdin_open: true
