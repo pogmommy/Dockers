@@ -13,9 +13,6 @@ services:
   ddns-updater: # dns updater, prevents issues caused by cycling residential ip address https://hub.docker.com/r/qmcgaw/ddns-updater
     image: qmcgaw/ddns-updater:latest
     container_name: ddns-updater
-#    networks:
-#      docker-local:
-#        ipv4_address: ${SUBNET_PREFIX}2
     environment:
       - LISTENING_PORT=8000
       - ROOT_URL=/

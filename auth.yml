@@ -44,7 +44,7 @@ services:
     networks:
       - authelia
     ports:
-      - 9091:9091
+      - ${AUTHELIA_PORT}:9091
     restart: unless-stopped
 
   authelia-redis: # data structure server for authelia #https://redis.io/docs/about/
