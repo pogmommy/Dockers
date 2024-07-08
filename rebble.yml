@@ -6,7 +6,7 @@ services:
     image: rebble-asr-pogmom
     container_name: rebble-asr-pogmom
     ports:
-      - "732:443"
+      - "${REBBLE_ASR_PORT}:443"
     environment:
       - SPEECH_API_KEY=${REBBLE_SPEECH_KEY}
     restart: always
@@ -15,7 +15,7 @@ services:
     image: rebble-weather-pogmom
     container_name: rebble-weather-pogmom
     ports:
-      - "733:5000"
+      - "${REBBLE_WEATHER_PORT}:5000"
     environment:
       - IBM_API_KEY=${REBBLE_WEATHER_KEY}
       - FLASK_APP=weather
