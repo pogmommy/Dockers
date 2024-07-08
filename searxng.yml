@@ -1,0 +1,72 @@
+version: "3.7"
+
+#networks:
+#  searxng:
+
+volumes:
+  valkey-data2:
+
+services:
+
+  gluetun: # pipe container traffic through vpn https://hub.docker.com/r/qmcgaw/gluetun
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun-searxng
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASS}
+      - SERVER_COUNTRIES=${WG_COUNTRIES}
+      - VPN_PORT_FORWARDING=off
+    ports:
+      - ${SEARXNG_PORT}:8080
+    restart: unless-stopped
+
+  redis:
+    container_name: searxng-redis
+    image: docker.io/valkey/valkey:7-alpine
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: unless-stopped
+#    networks:
+#      - searxng
+    network_mode: "service:gluetun"
+    volumes:
+      - valkey-data2:/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  searxng:
+    container_name: searxng
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+#    networks:
+#      - searxng
+    network_mode: "service:gluetun"
+#    ports:
+#      - ${SEARXNG_PORT}:8080
+    volumes:
+      - ${DATA_PATH}/searxng/data:/etc/searxng:rw
+      - ${DATA_PATH}/searxng/theme/pogmom:/usr/local/searxng/searx/static/themes/pogmom:rw
+    environment:
+      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME}/
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
