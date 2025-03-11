@@ -1,0 +1,56 @@
+version: "2"
+
+services:
+
+  pixelfed-app:
+    image: zknt/pixelfed
+    container_name: pixelfed-app
+    restart: unless-stopped
+    env_file:
+      - ${DATA_PATH}/pixelfed/env
+    volumes:
+      - "${DATA_PATH}/pixelfed/storage:/var/www/storage"
+      - "${DATA_PATH}/pixelfed/env:/var/www/.env"
+    ports:
+      - ${PIXELFED_PORT}:80
+    depends_on:
+      - pixelfed-db
+      - pixelfed-redis
+
+  pixelfed-worker:
+    image: zknt/pixelfed
+    container_name: pixelfed-worker
+    restart: unless-stopped
+    env_file:
+      - ${DATA_PATH}/pixelfed/env
+    volumes:
+      - "${DATA_PATH}/pixelfed/storage:/var/www/storage"
+      - "${DATA_PATH}/pixelfed/env:/var/www/.env"
+    entrypoint: /worker-entrypoint.sh
+    depends_on:
+      - pixelfed-db
+      - pixelfed-redis
+      - pixelfed-app
+    healthcheck:
+      test: php artisan horizon:status | grep running
+      interval: 60s
+      timeout: 5s
+      retries: 1
+
+  pixelfed-db:
+    image: zknt/mariadb
+    container_name: pixelfed-db
+    restart: unless-stopped
+    env_file:
+      - ${DATA_PATH}/pixelfed/env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${PIXELFED_MYSQL_PASS}
+    volumes:
+      - "${DATA_PATH}/pixelfed/db:/var/lib/mysql"
+
+  pixelfed-redis:
+    image: zknt/redis
+    container_name: pixelfed-redis
+    restart: unless-stopped
+    volumes:
+      - "${DATA_PATH}/pixelfed/redis:/data"

@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+
+    protonmail-bridge:
+        container_name: protonmail-bridge
+        volumes:
+            - ${DATA_PATH}/protonmail-bridge:/root
+        network_mode: host
+        restart: unless-stopped
+        image: ganeshlab/protonmail-bridge

@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+
+  resume-nginx:
+    image: nginx
+    container_name: resume-nginx
+    volumes:
+      - ${DATA_PATH}/webhosting/resume/src:/usr/share/nginx/html
+    ports:
+      - ${RESUME_NGINX_PORT}:80
+    restart: unless-stopped
+
+  pogmom-suite-nginx:
+    image: nginx
+    container_name: pogmom-suite-nginx
+    volumes:
+      - ${DATA_PATH}/webhosting/pogmom-suite/pogmom-suite:/usr/share/nginx/html
+    ports:
+      - ${POGMOM_SUITE_NGINX_PORT}:80
+    restart: unless-stopped
+
+  pogmomme-nginx:
+    image: nginx
+    container_name: pogmomme-nginx
+    volumes:
+      - ${DATA_PATH}/webhosting/pogmomme/pogmomme:/usr/share/nginx/html
+    ports:
+      - ${POGMOM_NGINX_PORT}:80
+    restart: unless-stopped

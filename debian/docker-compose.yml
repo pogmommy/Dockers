@@ -6,7 +6,7 @@ services:
     image: urpylka/aptly:latest
     container_name: aptly
     ports:
-      - "89:80"
+      - "${APTLY_PORT}:80"
     volumes:
       - ${DATA_PATH}/aptly/data:/opt/aptly
     logging:
