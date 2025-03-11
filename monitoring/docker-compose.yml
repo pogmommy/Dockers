@@ -8,22 +8,7 @@ networks:
       config:
         - subnet: ${MONITOR_SUBNET_PREFIX}0/24
 
-volumes:
-  portainer_data:
-    name: portainer_data
-
 services:
-
-  portainer: #Portainer is a web UI for managing your docker containers https://www.portainer.io/
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-    ports:
-      - "8000:8000"
-      - "9443:9443"
-    restart: always
 
   organizr: #organizr is a server control panel https://github.com/causefx/Organizr
     image: organizr/organizr

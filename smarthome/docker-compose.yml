@@ -27,7 +27,7 @@ services:
 
   wyoming-whisper: #speech to text for home assistant https://github.com/rhasspy/wyoming-addons
     image: rhasspy/wyoming-whisper
-    container_name: wyoming_whisper
+    container_name: wyoming-whisper
     volumes:
       - ${DATA_PATH}/wyoming_whisper/data:/data
     ports:
