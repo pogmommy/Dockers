@@ -16,11 +16,13 @@ services:
       - ${MATRIX_PORT}:8008/tcp
     restart: unless-stopped
 
-  riot-web: #matrix frontend https://hub.docker.com/r/bubuntux/riot-web
-    image: bubuntux/riot-web
-    container_name: riot_web
+  cinny:
+    image: ajbura/cinny
+    container_name: cinny
+    volumes:
+      - ${DATA_PATH}/cinny/data/config.json:/app/config.json
     ports:
-      - ${RIOT_PORT}:80
+      - ${CINNY_PORT}:80
     restart: unless-stopped
 
   synapse-postgresql: #matrix database https://hub.docker.com/_/postgres
