@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
 
   calibre-web: #Ebook hosting platform and online reader https://docs.linuxserver.io/images/docker-calibre-web/
@@ -8,12 +6,15 @@ services:
     environment:
       - PUID=${UID}
       - PGID=${GID}
-      - TZ=${TZ}
+      - TZ=${TZ_CITY}
     volumes:
       - ${DATA_PATH}/calibre-web/config:/config
       - ${MEDIA_PATH}:/mnt/Media
     ports:
       - ${CALIBRE_WEB_PORT}:8083
+#    env_file:
+#      - books.env
+#      - .env
     restart: unless-stopped
 
   calibre: #VNC client to manage Calibre library remotely https://docs.linuxserver.io/images/docker-calibre/

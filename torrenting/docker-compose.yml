@@ -30,7 +30,7 @@ services:
       - ${DATA_PATH}/gluetun/qbtprivate:/config
       - ${TEMP_PATH}/torrents/downloads:/downloads
     network_mode: "service:gluetun"
-    restart: unless-stopped
+    restart: always
 
   qbittorrent-public: # qbittorrent with webui, with network piped through gluetun. Second container allows for different settings based on different torrent services https://docs.linuxserver.io/images/docker-qbittorrent/
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -44,7 +44,7 @@ services:
       - ${DATA_PATH}/gluetun/qbtpublic:/config
       - ${TEMP_PATH}/torrents/downloads:/downloads:rw
     network_mode: "service:gluetun"
-    restart: unless-stopped
+    restart: always
 
   prowlarr: # torrent tracker manager/updater https://docs.linuxserver.io/images/docker-prowlarr/
     image: lscr.io/linuxserver/prowlarr:latest
@@ -69,4 +69,19 @@ services:
       - TZ=${TZ}
     ports:
       - ${FLARESOLVERR_PORT}:8191
+    restart: unless-stopped
+
+  samba: # samba remote file access https://github.com/deftwork/samba
+    image: elswork/samba:latest
+    container_name: samba
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "139:139"
+      - "445:445"
+    volumes:
+      - ${MEDIA_PATH}:/mnt/Media
+      - ${TEMP_PATH}/transcodecache:/transcodecache
+      - ${TEMP_PATH}/torrents/downloads:/downloads
+    command: '-u "${UID}:${GID}:${SMB_USER}:${SMB_USER}:${SMB_PASS}" -s "Media:/mnt/Media:rw:${SMB_USER}" -s "TranscodeCache:/transcodecache:rw:${SMB_USER}" -s "Downloads:/downloads:rw:${SMB_USER}"'
     restart: unless-stopped

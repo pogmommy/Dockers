@@ -1,12 +1,10 @@
-version: "3.8"
-
 services:
 
   terraria:
     image: ghcr.io/beardedio/terraria:vanilla-latest
     container_name: terraria_salivating_salmon
     ports:
-      - '7777:7777'
+      - ${TERRARIA_PORT}:7777
     restart: unless-stopped
     environment:
       - world=${TERRARIA_WORLD_FILE}
